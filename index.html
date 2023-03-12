@@ -1,0 +1,328 @@
+<html>
+<meta charset="utf8">
+
+<head>
+    <title>股票风险控制</title>
+    <link rel="stylesheet/less" type="text/css" href="table.less" />
+    <link rel="stylesheet/less" type="text/css" href="index.less" />
+    <script src="https://cdn.jsdelivr.net/npm/less@4"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+</head>
+<script>
+    $(document).ready(function () {
+        $('#tabel1 tbody').html('');
+        
+        function get_nums(id_str) {
+            var sub_id = '#' + id_str + ' input';
+            var dst_prices = [];
+            var inputs = $(sub_id);
+            for (var i = 0; i < inputs.length; i++) {
+                dst_prices.push($(inputs[i]).val());
+            }
+            return dst_prices;
+        }
+
+        function transfer_val(val, format) {
+            switch (format) {
+                case '2F':
+                    val = val.toFixed(2);
+                    break;
+                case 'I':
+                    val = parseInt(val);
+                    break;
+                case 'P':
+                    val = val * 100;
+                    val = val.toFixed(2);
+                    val = val + '%';
+                    break;
+            }
+            return val;
+        }
+
+        function generate_row(current_price, current_cost, num_share, dst_price, op) {
+            current_price = parseFloat(current_price);
+            current_cost = parseFloat(current_cost);
+            num_share = parseFloat(num_share);
+            dst_price = parseFloat(dst_price);
+            op = parseFloat(op);
+
+            var all_cost = current_cost * num_share;
+            var op_num_share = num_share + op;
+
+            // 操作变动
+            var op_cost = (all_cost + op * current_price) / (num_share + op);
+            var rate = (current_price - current_cost) / current_cost;
+            var op_rate = (current_price - op_cost) / op_cost;
+
+            // 目标盈亏
+            var dst_rate = (dst_price - op_cost) / op_cost;
+            var zone_val = (dst_price - current_price) * op_num_share;
+            var dst_all_val = (dst_price - op_cost) * op_num_share;
+
+            // 补回变动
+            var back_cost = (op_cost * op_num_share - dst_price * op) / num_share;
+            var back_rate = (dst_price - back_cost) / back_cost;
+
+
+            // 计算相应指标
+            var formats = ['2F', 'I', '2F', '2F', 'P', 'P', 'P', 'I', '2F', 'P', 'I', 'I'];
+            var ans =
+                `<tr>
+                    <td>`+ transfer_val(dst_price, formats[0]) + `</td>
+                    <td>`+ transfer_val(op, formats[1]) + `</td>
+                    <td>`+ transfer_val(current_cost, formats[2]) + `</td>
+                    <td>`+ transfer_val(op_cost, formats[3]) + `</td>
+                    <td>`+ transfer_val(rate, formats[4]) + `</td>
+                    <td>`+ transfer_val(op_rate, formats[5]) + `</td>
+                    <td>`+ transfer_val(dst_rate, formats[6]) + `</td>
+                    <td>`+ transfer_val(zone_val, formats[7]) + `</td>
+                    <td>`+ transfer_val(back_cost, formats[8]) + `</td>
+                    <td>`+ transfer_val(back_rate, formats[9]) + `</td>
+                    <td>`+ transfer_val(num_share, formats[10]) + `</td>
+                    <td>`+ transfer_val(dst_all_val, formats[11]) + `</td>
+                </tr>`;
+            return ans;
+        }
+
+        $('#count_risk').click(function () {
+            var current_price = $('#current_price').val();
+            var current_cost = $('#current_cost').val();
+            var num_share = $('#num_share').val();
+            var dst_prices = get_nums('dst_price_group');
+            var dst_ops = get_nums('dst_op_group');
+
+            $('#tabel1 tbody').html('');
+            for (var i = 0; i < dst_prices.length; i++) {
+                var price = dst_prices[i];
+                for (var j = 0; j < dst_ops.length; j++) {
+                    var op = dst_ops[j];
+                    var row = generate_row(current_price, current_cost, num_share, price, op);
+                    row = $(row);
+                    $('#tabel1 tbody').append(row);
+                    $('#tabel1 tbody tr:last').hide();
+                    $('#tabel1 tbody tr:last').fadeIn(500);
+                }
+            }
+        });
+    });
+</script>
+
+<body>
+    <div class="main">
+        <div class="left">
+            <h1>风险评估</h1>
+            <div class="ctl_group">
+                <h2>
+                    <div></div>当前状态
+                </h2>
+                <div class="options">
+                    <div class="option">
+                        <span class="text">现价</span>
+                        <input id="current_price" type="number" class="val" value="17" />
+                    </div>
+                    <div class="option">
+                        <span class="text">成本</span>
+                        <input id="current_cost" type="number" class="val" value="21" />
+                    </div>
+                    <div class="option">
+                        <span class="text">股数</span>
+                        <input id="num_share" type="number" class="val" value="1500" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="ctl_group">
+                <h2>
+                    <div></div>目标价位
+                </h2>
+                <div id="dst_price_group" class="options">
+                    <div class="option">
+                        <span class="text">价格1</span>
+                        <input type="number" class="val" value="20" />
+                        <img src="./icons/x.svg" alt="">
+                    </div>
+                    <div class="option">
+                        <span class="text">价格2</span>
+                        <input type="number" class="val" value="13" />
+                        <img src="./icons/x.svg" alt="">
+                    </div>
+                </div>
+                <div class="btn_add">
+                    <img src="./icons/plus.svg" alt="">
+                    <span>增加</span>
+                </div>
+            </div>
+
+            <div id="dst_op_group" class="ctl_group">
+                <h2>
+                    <div></div>操作方式
+                </h2>
+                <div class="options">
+                    <div class="option">
+                        <span class="text">操作1</span>
+                        <input type="number" class="val" value="0" />
+                        <img src="./icons/x.svg" alt="">
+                    </div>
+                    <div class="option">
+                        <span class="text">操作2</span>
+                        <input type="number" class="val" value="-500" />
+                        <img src="./icons/x.svg" alt="">
+                    </div>
+                </div>
+                <div class="btn_add">
+                    <img src="./icons/plus.svg" alt="">
+                    <span>增加</span>
+                </div>
+            </div>
+
+            <div class="ctl_group">
+                <div id="count_risk" class="btn_submit">计算风险</div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div>
+                <table id="tabel1" class="my-table">
+                    <thead>
+                        <tr>
+                            <td></td>
+                            <td></td>
+                            <td colspan="4">操作变动</td>
+                            <td colspan="2">目标盈亏</td>
+                            <td colspan="4">补回变动</td>
+                        </tr>
+                        <tr>
+                            <td>目标价</td>
+                            <td>操作</td>
+                            <td>前成本</td>
+                            <td>后成本</td>
+                            <td>操作前盈率</td>
+                            <td>操作后盈率</td>
+                            <td>目标盈率</td>
+                            <td>区间盈亏</td>
+                            <td>补回成本</td>
+                            <td>补回盈率</td>
+                            <td>总股数</td>
+                            <td>总盈余</td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>20</td>
+                            <td>0</td>
+                            <td>21</td>
+                            <td>23</td>
+                            <td>10%</td>
+                            <td>20%</td>
+                            <td>10%</td>
+                            <td>10%</td>
+                            <td>18</td>
+                            <td>20%</td>
+                            <td>1500</td>
+                            <td>1652</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td>0</td>
+                            <td>21</td>
+                            <td>23</td>
+                            <td>10%</td>
+                            <td>20%</td>
+                            <td>10%</td>
+                            <td>10%</td>
+                            <td>18</td>
+                            <td>20%</td>
+                            <td>1500</td>
+                            <td>1652</td>
+                        </tr>
+                        <tr>
+                            <td>20</td>
+                            <td>0</td>
+                            <td>21</td>
+                            <td>23</td>
+                            <td>10%</td>
+                            <td>20%</td>
+                            <td>10%</td>
+                            <td>10%</td>
+                            <td>18</td>
+                            <td>20%</td>
+                            <td>1500</td>
+                            <td>1652</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <h2>操作变动</h2>
+                <p>
+                    <span style="font-weight: bold;">
+                        前成本：
+                    </span>
+                    不做操作时的成本。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        后成本：
+                    </span>
+                    操作后的成本。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        操作前盈率：
+                    </span>
+                    基于成本价的盈亏率。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        操作后盈率：
+                    </span>
+                    基于成本价的盈亏率。
+                </p>
+            </div>
+            <div>
+                <h2>目标盈亏</h2>
+                <p>
+                    <span style="font-weight: bold;">
+                        目标盈率：
+                    </span>
+                    到达目标价时，基于成本价的盈亏率。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        区间盈亏：
+                    </span>
+                    到达目标价时，区间中产生的亏损和利润。
+                </p>
+            </div>
+            <div>
+                <h2>补回变动</h2>
+                <p>
+                    <span style="font-weight: bold;">
+                        补回成本：
+                    </span>
+                    补回仓位后，股票的成本。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        补回盈率：
+                    </span>
+                    补回后，基于成本价的盈亏率。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        总股数：
+                    </span>
+                    总股数。
+                </p>
+                <p>
+                    <span style="font-weight: bold;">
+                        总盈余：
+                    </span>
+                    在到达目标状态时，总归的盈亏额度。
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
