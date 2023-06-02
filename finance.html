@@ -1,0 +1,249 @@
+<html>
+<meta charset="utf8">
+
+<head>
+    <title>股票风险控制</title>
+    <link rel="stylesheet/less" type="text/css" href="table.less" />
+    <link rel="stylesheet/less" type="text/css" href="finance.less" />
+    <script src="https://cdn.jsdelivr.net/npm/less@4"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+</head>
+<script>
+    $(document).ready(function () {
+        function count(fqjr, fqs, yg, qzlx, rate){
+            var s = 0;
+            var r = 1;
+            for(var i=1; i<= fqs; i++){
+                r = r * (1+rate);
+                s += yg/r;
+            }
+
+            return fqjr - qzlx  -s;
+        }
+
+        function count_yg(fqjr, fqs, rate){
+            var i = 0, j = fqjr;
+            var yg = 0;
+            var left = count(fqjr, fqs, i, 0, rate);
+            var right = count(fqjr, fqs, j, 0, rate);
+            
+            while(i<j){
+                yg = (i + j) / 2;
+                var center = count(fqjr, fqs, yg, 0, rate);
+
+                if(Math.abs(center) < 0.001) break;
+
+                if(left * center < 0){
+                    j = yg - 0.00001;
+                    right = count(fqjr, fqs, j, 0, rate);
+                }else{
+                    i = yg + 0.00001;
+                    left = count(fqjr, fqs, i, 0, rate);
+                }
+            }
+            return yg;
+        }
+
+        var r = 0.0494 / 12;
+        var n = 12;
+        console.log(count_yg(50000, n, r) * n - 50000);
+
+        $('#tab-yg').click(function(){
+            $('.tabs span').removeClass('active');
+            $('#tab-yg').addClass('active');
+            $('#tab-content-ll').hide();
+            $('#tab-content-yg').show();
+        });
+        $('#tab-ll').click(function(){
+            $('.tabs span').removeClass('active');
+            $('#tab-ll').addClass('active');
+            $('#tab-content-yg').hide();
+            $('#tab-content-ll').show();
+        });
+
+        // 查询1
+        $('#count_v').click(function () {
+            var fqjr = $('#fqjr').val();
+            
+            var fqs = $('#fqs').val();
+            var yg = $('#yg').val();
+            var qzlx = $('#qzlx').val();
+
+            // count
+            var v = yg *  fqs - qzlx;
+            var i = 0, j = 10;
+            var left = count(fqjr, fqs, yg, qzlx, 0);
+            var right = count(fqjr, fqs, yg, qzlx, j);
+            var rate = 0;
+
+            while(i<j){
+                rate = (i+j)/2;
+                var center = count(fqjr, fqs, yg, qzlx, rate);
+
+                if(Math.abs(center) < 0.001) break;
+
+                if(left * center < 0){
+                    j = rate - 0.00001;
+                    right = count(fqjr, fqs, yg, qzlx, j);
+                }else{
+                    i = rate + 0.00001;
+                    left = count(fqjr, fqs, yg, qzlx, i);
+                }
+            }
+
+            var zlx = yg*fqs - fqjr + qzlx;
+            var my_rate_dq = (qzlx + yg*fqs - fqjr) / fqjr / fqs * 100;
+            var my_rate_year = my_rate_dq * 12;
+            var rate_dq = rate*100;
+            var rate_year = rate_dq * 12;
+
+            $('#zlx').html(parseFloat(zlx).toFixed(2));
+            $('#my_rate_q').html(my_rate_dq.toFixed(5));
+            $('#my_rate_year').html(my_rate_year.toFixed(5));
+            $('#rate_q').html(rate_dq.toFixed(5));
+            $('#rate_year').html(rate_year.toFixed(5));
+            $('#tab-content-yg .result').hide();
+            $('#tab-content-yg .result').fadeIn();
+        });
+        
+        // 查询2
+        $('#count_v2').click(function () {
+            var fqjr = $('#fqjr2').val();
+            var fqs = $('#fqs2').val();
+            var fqll = $('#fqll2').val();
+            
+            var yg = count_yg(fqjr, fqs, fqll/12);
+            var zlx = yg * fqs - fqjr;
+            $('#zlx2').html(parseFloat(zlx).toFixed(2));
+            $('#yg2').html(yg.toFixed(2));
+            $('#tab-content-ll .result').hide();
+            $('#tab-content-ll .result').fadeIn();
+        });
+    });
+</script>
+
+<body>
+    <div class="main">
+        <h2>金融分期利率计算器(等额本金)</h2>
+        <div class="tabs">
+            <span id="tab-yg" class="active">按月供</span>
+            <span id="tab-ll">按利率</span>
+        </div>
+
+        <div id="tab-content-yg">
+            <div class="cell">
+                <span>分期金额</span>
+                <input id="fqjr" type="number" value="50000"></input>
+            </div>
+            <div class="cell">
+                <span>分期月数</span>
+                <select id="fqs">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12" selected="selected">12</option>
+                    <option value="24">24</option>
+                    <option value="36">36</option>
+                </select>
+            </div>
+            <div class="cell">
+                <span>月供</span>
+                <input id="yg" type="number" value="4252.92">
+            </div>
+            <div class="cell">
+                <span>前置利息</span>
+                <input id="qzlx" type="number" value="0">
+            </div>
+            <div class="cell">
+                <div id="count_v" class="btn_submit">查 询</div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    总利息：
+                    <span id="zlx"></span>
+                </div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    名义单期利率：
+                    <span id="my_rate_q"></span>
+                    %
+                </div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    名义年利率：
+                    <span id="my_rate_year"></span>
+                    %
+                </div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    实际单期利率：
+                    <span id="rate_q"></span>
+                    %
+                </div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    实际年利率(单利)：
+                    <span id="rate_year"></span>
+                    %
+                </div>
+            </div>
+        </div>
+        <div id="tab-content-ll" style="display: none;">
+            <div class="cell">
+                <span>分期金额</span>
+                <input id="fqjr2" type="number" value="50000"></input>
+            </div>
+            <div class="cell">
+                <span>分期月数</span>
+                <select id="fqs2">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12" selected="selected">12</option>
+                    <option value="24">24</option>
+                    <option value="36">36</option>
+                </select>
+            </div>
+            <div class="cell">
+                <span>分期年利(单利)</span>
+                <input id="fqll2" type="number" value="0.05"></input>
+            </div>
+            <div class="cell">
+                <div id="count_v2" class="btn_submit">查 询</div>
+            </div>
+            <div class="cell">
+                <div class="result">月供
+                    <span id="yg2"></span>
+                </div>
+            </div>
+            <div class="cell">
+                <div class="result">
+                    总利息：
+                    <span id="zlx2"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
