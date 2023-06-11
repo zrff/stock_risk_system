@@ -68,6 +68,11 @@
             var fqs = $('#fqs').val();
             var yg = $('#yg').val();
             var qzlx = $('#qzlx').val();
+            
+            fqjr = parseFloat(fqjr);
+            fqs = parseFloat(fqs);
+            yg = parseFloat(yg);
+            qzlx = parseFloat(qzlx);
 
             // count
             var v = yg *  fqs - qzlx;
@@ -111,6 +116,10 @@
             var fqjr = $('#fqjr2').val();
             var fqs = $('#fqs2').val();
             var fqll = $('#fqll2').val();
+            
+            fqjr = parseFloat(fqjr);
+            fqs = parseFloat(fqs);
+            fqll = parseFloat(fqll);
             
             var yg = count_yg(fqjr, fqs, fqll/12);
             var zlx = yg * fqs - fqjr;
